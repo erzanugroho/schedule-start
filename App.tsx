@@ -22,6 +22,7 @@ import { UnitConverter } from './components/UnitConverter';
 import { NumberTicker } from './components/NumberTicker';
 import { AuditLog } from './components/AuditLog';
 import { AuditLogInput, cloneAuditValue, createAuditRow } from './utils/auditLog';
+import { InstallPwaFab } from './components/InstallPwaFab';
 
 const GRADES: GradeType[] = ['SM', 'SLK', 'SLP', 'SE', 'SR'];
 const STAGE_OPTIONS = ['Sample Blowing', 'Sample Washing', 'Sample Air Slurry'];
@@ -194,6 +195,15 @@ const initAudioContext = () => {
 
 // Web Audio API Sound Effects
 const playAlarmSound = (type: AlarmSoundType) => {
+    // Khusus di HP: Jangan bunyikan alarm jika sedang membuka tab lain atau aplikasi di background
+    if (typeof document !== 'undefined' && document.hidden) {
+        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+            (window.innerWidth < 1024 && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window));
+        if (isMobile) {
+            return;
+        }
+    }
+
     try {
         if (type === 'fajar_sadboy') {
             // Replace with Gaspol Dangak Song (10 seconds, loud volume)
@@ -6781,6 +6791,9 @@ const App: React.FC = () => {
 
       {/* --- SETTINGS POPUP MODAL --- */}
       {renderSettingsModal()}
+
+      {/* --- MOBILE PWA INSTALL FAB (Pojok Kiri Bawah Mobile) --- */}
+      <InstallPwaFab />
 
     </div>
   );
