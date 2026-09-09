@@ -22,6 +22,7 @@ import { UnitConverter } from './components/UnitConverter';
 import { NumberTicker } from './components/NumberTicker';
 import { AuditLog } from './components/AuditLog';
 import { AuditLogInput, cloneAuditValue, createAuditRow } from './utils/auditLog';
+import { InstallPwaFab } from './components/InstallPwaFab';
 
 const GRADES: GradeType[] = ['SM', 'SLK', 'SLP', 'SE', 'SR'];
 const STAGE_OPTIONS = ['Sample Blowing', 'Sample Washing', 'Sample Air Slurry'];
@@ -194,6 +195,15 @@ const initAudioContext = () => {
 
 // Web Audio API Sound Effects
 const playAlarmSound = (type: AlarmSoundType) => {
+    // Khusus di HP: Jangan bunyikan alarm jika sedang membuka tab lain atau aplikasi di background
+    if (typeof document !== 'undefined' && document.hidden) {
+        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+            (window.innerWidth < 1024 && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window));
+        if (isMobile) {
+            return;
+        }
+    }
+
     try {
         if (type === 'fajar_sadboy') {
             // Replace with Gaspol Dangak Song (10 seconds, loud volume)
@@ -4632,11 +4642,55 @@ const App: React.FC = () => {
                                   <div className="flex gap-1 items-center shrink-0">
                                   </div>
                                   
-                                  {stageInfo && (
+                                  {!isSkipped && mode === 'OPEN' ? (
+                                      <div 
+                                          className="flex-1 mx-1 self-center overflow-hidden whitespace-nowrap relative marquee-container select-none min-h-[20px] flex items-center" 
+                                          style={{ fontSize: '0.7em' }}
+                                          title={`Check HWD LEVEL sebelum start${stageInfo ? ` • ${stageInfo}` : ''}`}
+                                      >
+                                          <div className="flex whitespace-nowrap w-full">
+                                              <div 
+                                                  className={`flex shrink-0 animate-marquee items-center min-w-full ${config.isMarqueePaused ? 'paused' : ''}`}
+                                                  style={{ animationDuration: `${Math.max(8, Math.round(config.marqueeSpeed * (stageInfo ? 0.6 : 0.45)))}s` }}
+                                              >
+                                                  {Array(4).fill(null).map((_, i) => (
+                                                      <div key={i} className="inline-flex items-center gap-2 mx-1.5">
+                                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 font-black shadow-sm uppercase tracking-tighter whitespace-nowrap leading-tight">
+                                                              Check HWD LEVEL sebelum start
+                                                          </span>
+                                                          {stageInfo && (
+                                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-yellow-400 text-black font-black border-2 border-red-600 shadow-sm uppercase tracking-tighter whitespace-nowrap leading-tight animate-pulse">
+                                                                  {stageInfo}
+                                                              </span>
+                                                          )}
+                                                      </div>
+                                                  ))}
+                                              </div>
+                                              <div 
+                                                  className={`flex shrink-0 animate-marquee items-center min-w-full ${config.isMarqueePaused ? 'paused' : ''}`}
+                                                  style={{ animationDuration: `${Math.max(8, Math.round(config.marqueeSpeed * (stageInfo ? 0.6 : 0.45)))}s` }}
+                                                  aria-hidden="true"
+                                              >
+                                                  {Array(4).fill(null).map((_, i) => (
+                                                      <div key={i + 10} className="inline-flex items-center gap-2 mx-1.5">
+                                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 font-black shadow-sm uppercase tracking-tighter whitespace-nowrap leading-tight">
+                                                              Check HWD LEVEL sebelum start
+                                                          </span>
+                                                          {stageInfo && (
+                                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-yellow-400 text-black font-black border-2 border-red-600 shadow-sm uppercase tracking-tighter whitespace-nowrap leading-tight animate-pulse">
+                                                                  {stageInfo}
+                                                              </span>
+                                                          )}
+                                                      </div>
+                                                  ))}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ) : stageInfo ? (
                                       <div className="flex-1 mx-1 self-center bg-yellow-400 text-black font-black text-center animate-pulse rounded px-1 uppercase tracking-tighter border-2 border-red-600 shadow-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: '0.7em' }}>
                                           {stageInfo}
                                       </div>
-                                  )}
+                                  ) : null}
                               </div>
                             </div>
                           </td>
@@ -6430,6 +6484,11 @@ const App: React.FC = () => {
                                         C TO O
                                     </button>
                                 </div>
+                                {editForm.mode === 'OPEN' && (
+                                    <div className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-black text-xs shadow-sm">
+                                        <span>Check HWD LEVEL sebelum start</span>
+                                    </div>
+                                )}
                              </div>
                         </div>
 
@@ -6781,6 +6840,9 @@ const App: React.FC = () => {
 
       {/* --- SETTINGS POPUP MODAL --- */}
       {renderSettingsModal()}
+
+      {/* --- MOBILE PWA INSTALL FAB (Pojok Kiri Bawah Mobile) --- */}
+      <InstallPwaFab />
 
     </div>
   );
