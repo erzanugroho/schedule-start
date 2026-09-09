@@ -101,6 +101,7 @@ interface SidebarProps {
   onSelectGroup: (view: GroupedView, group: GroupKey) => void;
   isSettingsOpen: boolean;
   onToggleSettings: () => void;
+  settingsDisabled?: boolean;
   /** Di bawah 1024px sidebar jadi drawer yang menutupi layar. */
   isMobile?: boolean;
   mobileOpen?: boolean;
@@ -110,6 +111,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   currentView, currentGroup, collapsed, onToggleCollapsed,
   onSelectView, onSelectGroup, isSettingsOpen, onToggleSettings,
+  settingsDisabled = false,
   isMobile = false, mobileOpen = false, onMobileClose,
 }) => {
   /* Rail ikon hanya untuk desktop. Di drawer, menu selalu tampil penuh. */
@@ -336,27 +338,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           id="nav-setting"
-          title={isSettingsOpen ? 'Tutup Pengaturan' : 'Buka Pengaturan'}
+          disabled={settingsDisabled}
+          aria-disabled={settingsDisabled}
+          title={settingsDisabled ? 'Pengaturan hanya dapat diubah dari desktop' : isSettingsOpen ? 'Tutup Pengaturan' : 'Buka Pengaturan'}
           onClick={() => {
+            if (settingsDisabled) return;
             setOpenMenu(null);
             onToggleSettings();
             /* Tanpa ini modal pengaturan terbuka di balik drawer. */
             if (isMobile) onMobileClose?.();
           }}
-          className={`w-full flex items-center gap-2.5 rounded-xl font-black text-[12px] uppercase tracking-wide cursor-pointer transition-colors ${
+          className={`w-full flex items-center gap-2.5 rounded-xl font-black text-[12px] uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset ${
                       isMobile ? 'py-3.5' : 'py-2.5'
                     } ${
             isRail ? 'justify-center px-0' : 'px-2.5'
           } ${
-            isSettingsOpen
+            settingsDisabled
+              ? 'cursor-not-allowed opacity-45 text-slate-400 dark:text-slate-600'
+              : isSettingsOpen
               ? 'bg-blue-600 ring-blue-400 text-white ring-1 shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              : 'cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Settings className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${
             isSettingsOpen ? 'rotate-90 text-white' : 'text-blue-500'
           }`} />
-          {!isRail && <span className="flex-1 text-left">PENGATURAN</span>}
+          {!isRail && (
+            <span className="flex-1 text-left">
+              PENGATURAN{settingsDisabled ? ' (DESKTOP)' : ''}
+            </span>
+          )}
         </button>
 
       </div>

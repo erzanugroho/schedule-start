@@ -19,6 +19,7 @@ export interface Fie2002TrendEntry {
 }
 
 interface Fie2002TrendModalProps {
+  readOnly?: boolean;
   isOpen: boolean;
   onClose: () => void;
   currentValue: number;
@@ -31,6 +32,7 @@ interface Fie2002TrendModalProps {
 export type TimeRangeOption = '1h' | '24h' | '3d' | '7d' | 'all';
 
 export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
+  readOnly = false,
   isOpen,
   onClose,
   currentValue,
@@ -84,6 +86,7 @@ export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
   // Handle Manual Add
   const handleAddManual = (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) return;
     const val = parseFloat(manualValue);
     if (!isNaN(val) && onAddManualEntry) {
       onAddManualEntry(val, manualHour || undefined);
@@ -347,7 +350,7 @@ export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {onResetDefaultHistory && (
+              {onResetDefaultHistory && !readOnly && (
                 <button 
                   onClick={onResetDefaultHistory}
                   className="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 border border-amber-500/30"
@@ -356,7 +359,7 @@ export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
                   <RefreshCw className="w-3.5 h-3.5" /> RESET DATA SAMPLE 7 HARI
                 </button>
               )}
-              {onClearHistory && (
+              {onClearHistory && !readOnly && (
                 <button 
                   onClick={onClearHistory}
                   className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1 border border-rose-500/20"
@@ -369,6 +372,7 @@ export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
           </div>
 
           {/* Form Quick Add Manual Entry */}
+          {!readOnly && (
           <form onSubmit={handleAddManual} className="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-2xl border border-blue-200/80 dark:border-blue-900/40 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -407,6 +411,7 @@ export const Fie2002TrendModal: React.FC<Fie2002TrendModalProps> = ({
               </button>
             </div>
           </form>
+          )}
 
           {/* Detailed Log Table View */}
           {showTable && (

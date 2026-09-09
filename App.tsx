@@ -1099,6 +1099,7 @@ const App: React.FC = () => {
   /* Di bawah 1024px tabel scheduler tidak muat, jadi struktur render diganti
      (tabel jadi kartu, sidebar jadi drawer) — bukan sekadar gaya. */
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const isMobileScheduleReadOnly = !isDesktop;
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   /* Grup shift aktif. Tiap grup adalah halaman tersendiri, jadi kombinasi
@@ -1225,11 +1226,13 @@ const App: React.FC = () => {
   const [tempSelectedGradeForChange, setTempSelectedGradeForChange] = useState<GradeType>('SM');
 
   const openGradeChangeModal = () => {
+    if (isMobileScheduleReadOnly) return;
     setTempSelectedGradeForChange(config.gradeMode === 'normal' ? config.currentGrade : demonomerGrade);
     setIsGradeChangeModalOpen(true);
   };
 
   const handleConfirmGradeChange = () => {
+    if (isMobileScheduleReadOnly) return;
     const previousGrade = demonomerGrade;
     setDemonomerGrade(tempSelectedGradeForChange);
     handleConfigChange('gradeMode', 'gradeChange');
@@ -1322,6 +1325,7 @@ const App: React.FC = () => {
   }, [demonomerData?.f2002, updateFie2002TrendEntry]);
 
   const handleAddManualFieTrend = (val: number, customHour?: string) => {
+    if (isMobileScheduleReadOnly) return;
     const now = new Date();
     const hourStr = customHour || `${now.getHours().toString().padStart(2, '0')}:00`;
     const hourKey = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${hourStr}`;
@@ -1345,6 +1349,7 @@ const App: React.FC = () => {
   };
 
   const handleResetDefaultFieTrend = () => {
+    if (isMobileScheduleReadOnly) return;
     const defaultHist = generateDefaultFie2002History(demonomerData.f2002);
     setFie2002TrendHistory(defaultHist);
     try {
@@ -1353,6 +1358,7 @@ const App: React.FC = () => {
   };
 
   const handleClearFieTrend = () => {
+    if (isMobileScheduleReadOnly) return;
     setFie2002TrendHistory([]);
     try {
       localStorage.removeItem('fie2002_trend_history');
@@ -2030,6 +2036,10 @@ const App: React.FC = () => {
 
   // --- Handlers ---
   const handleConfigChange = (key: keyof AppState, value: any) => {
+    if (
+      isMobileScheduleReadOnly &&
+      (currentView === 'scheduler' || key === 'currentGrade' || key === 'gradeMode')
+    ) return;
     const previousValue = config[key];
     setConfig((prev) => ({ ...prev, [key]: value }));
 
@@ -2089,6 +2099,7 @@ const App: React.FC = () => {
   };
 
   const handleDemonomerGradeChange = (grade: GradeType) => {
+      if (isMobileScheduleReadOnly) return;
       if (config.gradeMode === 'normal') {
           handleConfigChange('currentGrade', grade);
           return;
@@ -2171,6 +2182,7 @@ const App: React.FC = () => {
   }, [config.isStopped, stoppedAt]);
 
   const handleApply = async () => {
+      if (isMobileScheduleReadOnly) return;
       try {
           const newStartTime = new Date(tempBaseStartTime).toISOString();
           const previousScheduleState = {
@@ -2257,6 +2269,20 @@ const App: React.FC = () => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resetParams, setResetParams] = useState({ batch: 0, time: '' });
 
+  /* Jika viewport diperkecil saat modal edit masih terbuka, tutup semua jalur
+     mutasi schedule agar mode HP langsung benar-benar hanya-baca. */
+  useEffect(() => {
+      if (isDesktop) return;
+      setIsSettingsOpen(false);
+      setSelectedItem(null);
+      setEditingReactorNote(null);
+      setIsResetModalOpen(false);
+      setIsGradeChangeModalOpen(false);
+      setIsCatalystModalOpen(false);
+      setIsDemonomerPopupOpen(false);
+      setStartSiloData(null);
+  }, [isDesktop]);
+
   const toggleTheme = () => {
       handleConfigChange('theme', config.theme === 'light' ? 'dark' : 'light');
   };
@@ -2288,6 +2314,7 @@ const App: React.FC = () => {
   };
 
   const handleResetSequence = (item?: ScheduleItem) => {
+      if (isMobileScheduleReadOnly) return;
       let batchVal = config.baseBatchNumber;
       let localIso = '';
 
@@ -2309,6 +2336,7 @@ const App: React.FC = () => {
   };
 
   const submitResetSequence = async () => {
+      if (isMobileScheduleReadOnly) return;
       try {
           if (!resetParams.time) {
               setDbSchemaError("Silakan isi Waktu Mulai (New Start Time) yang valid.");
@@ -2376,6 +2404,7 @@ const App: React.FC = () => {
 
   // --- Catalyst Handlers ---
   const handleCatalystChange = (row: 'f' | 'h' | 'g', field: 'netto' | 'bruto', val: string) => {
+    if (isMobileScheduleReadOnly) return;
     const previousValue = catalystData[row]?.[field];
     const newData = {
       ...catalystData,
@@ -2397,6 +2426,7 @@ const App: React.FC = () => {
   };
 
   const openCatalystModal = () => {
+      if (isMobileScheduleReadOnly) return;
       if (catalystData.presets) {
           setTempCatalystPresets(prev => ({
               ...prev,
@@ -2407,6 +2437,7 @@ const App: React.FC = () => {
   };
 
   const handleTempPresetChange = (grade: string, catKey: string, val: string) => {
+      if (isMobileScheduleReadOnly) return;
       setTempCatalystPresets(prev => ({
           ...prev,
           [grade]: {
@@ -2417,6 +2448,7 @@ const App: React.FC = () => {
   };
 
   const saveCatalystPresets = () => {
+      if (isMobileScheduleReadOnly) return;
       const updatedCatalystData = {
           ...catalystData,
           presets: tempCatalystPresets
@@ -2439,6 +2471,7 @@ const App: React.FC = () => {
   };
 
   const applyCatalystPreset = (grade: string) => {
+      if (isMobileScheduleReadOnly) return;
       const preset = tempCatalystPresets[grade];
       if (!preset) return;
 
@@ -2518,6 +2551,7 @@ const App: React.FC = () => {
   
   // 1. Initial Click Handler: Opens the Confirmation Modal
   const handleSiloSwitch = (newSiloId: 'O' | 'P' | 'Q') => {
+      if (isMobileScheduleReadOnly) return;
       if (newSiloId === siloState.activeSilo) return;
 
       const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -2533,6 +2567,7 @@ const App: React.FC = () => {
 
   // 2. Commit Handler: Executed when user confirms inside the Modal
   const handleConfirmSiloStart = async () => {
+      if (isMobileScheduleReadOnly) return;
       if (!startSiloData) return;
 
       const previousSiloId = siloState.activeSilo;
@@ -2590,6 +2625,7 @@ const App: React.FC = () => {
   };
 
   const handleSiloDataChange = (siloId: 'O' | 'P' | 'Q', field: keyof SiloData, value: any) => {
+      if (isMobileScheduleReadOnly) return;
       const previousValue = siloState.silos[siloId][field];
       const newSiloState = {
           ...siloState,
@@ -2618,6 +2654,7 @@ const App: React.FC = () => {
 
   // --- Demonomer Handlers ---
   const handleDemonomerChange = (field: keyof DemonomerData, value: any) => {
+      if (isMobileScheduleReadOnly) return;
       const previousValue = demonomerData[field];
       const newData = { ...demonomerData, [field]: value };
       setDemonomerData(newData);
@@ -2643,11 +2680,13 @@ const App: React.FC = () => {
 
   // --- Reactor Note Handlers ---
   const openReactorNoteModal = (reactorId: string) => {
+      if (isMobileScheduleReadOnly) return;
       setEditingReactorNote(reactorId);
       setTempReactorNote(config.reactorNotes[reactorId] || "");
   };
   
   const saveReactorNote = async () => {
+      if (isMobileScheduleReadOnly) return;
       if (editingReactorNote) {
           setConfig(prev => ({
               ...prev,
@@ -2676,6 +2715,7 @@ const App: React.FC = () => {
 
   // --- Modal Handlers ---
   const openRescheduleModal = (item: ScheduleItem) => {
+    if (isMobileScheduleReadOnly) return;
     setSelectedItem(item);
     setShouldBlinkNote(true);
     setTimeout(() => setShouldBlinkNote(false), 5000);
@@ -2760,6 +2800,7 @@ const App: React.FC = () => {
   };
 
   const saveReschedule = async () => {
+    if (isMobileScheduleReadOnly) return;
     if (selectedItem && editForm.timeValue) {
       const newDate = new Date(editForm.timeValue);
       
@@ -2930,6 +2971,7 @@ const App: React.FC = () => {
   };
 
   const clearOverride = async () => {
+    if (isMobileScheduleReadOnly) return;
     if (selectedItem) {
       // Optimistic
       const newConfigs = { ...config.itemConfigs };
@@ -3576,9 +3618,9 @@ const App: React.FC = () => {
           {/* Left Section: Widget */}
           <div className="flex shrink-0 lg:flex-1 order-3 lg:order-1 w-full lg:w-auto">
                {/* Widget: interval dan countdown start berikutnya. */}
-               <div className="flex flex-col lg:flex-row bg-slate-800 rounded-lg p-1 shadow-md w-full lg:w-auto gap-1 lg:gap-0">
+               <div className="grid grid-cols-[86px_minmax(0,1fr)] lg:flex lg:flex-row bg-slate-800 rounded-lg p-1 shadow-md w-full lg:w-auto gap-0">
                       {/* Interval */}
-                      <div className="flex w-full lg:w-auto shrink-0 px-2 lg:px-4 py-1.5 flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-slate-700/50 min-w-[86px] lg:min-w-[125px] relative overflow-hidden group">
+                      <div className="flex w-auto shrink-0 px-1.5 lg:px-4 py-1.5 flex-col items-center justify-center border-r border-slate-700/50 min-w-0 lg:min-w-[125px] relative overflow-hidden group">
                          {/* Subtle pulsing bg */}
                          <div className="absolute inset-0 bg-cyan-500/5 dark:bg-cyan-400/5 rounded-l-lg pointer-events-none"></div>
                          
@@ -3592,7 +3634,7 @@ const App: React.FC = () => {
                       </div>
 
                       {/* Countdown: start reaktor berikutnya */}
-                      <div className="w-full lg:w-auto px-2 lg:px-3 py-1.5 flex items-stretch gap-2 border-t lg:border-t-0 lg:border-l border-slate-700/50 min-w-0 lg:min-w-[230px] relative overflow-hidden">
+                      <div className="w-auto px-1.5 lg:px-3 py-1.5 flex items-stretch gap-1.5 lg:gap-2 min-w-0 lg:min-w-[230px] relative overflow-hidden">
                          <div className={`absolute inset-0 rounded-r-lg pointer-events-none ${
                             isNextStartImminent ? 'bg-red-500/10' : 'bg-amber-500/5'
                          }`}></div>
@@ -4152,7 +4194,11 @@ const App: React.FC = () => {
               <div className="bg-slate-800 text-white font-bold text-[0.7em] px-3 py-2 text-center uppercase tracking-tight">
                   Grade Selection Mode
               </div>
-              <div className="p-2 flex flex-col gap-2">
+              <fieldset
+                disabled={isMobileScheduleReadOnly}
+                aria-label={isMobileScheduleReadOnly ? 'Pilihan grade hanya dapat diubah dari desktop' : 'Pilihan grade'}
+                className={`p-2 flex flex-col gap-2 border-0 min-w-0 ${isMobileScheduleReadOnly ? 'opacity-65 cursor-not-allowed' : ''}`}
+              >
                   <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                       <button 
                         onClick={() => handleConfigChange('gradeMode', 'normal')}
@@ -4179,7 +4225,7 @@ const App: React.FC = () => {
                           </button>
                       ))}
                   </div>
-              </div>
+              </fieldset>
           </div>
       );
   };
@@ -4232,8 +4278,12 @@ const App: React.FC = () => {
       return (
           <div className="flex flex-col shadow-sm rounded-xl w-full border border-slate-200 dark:border-slate-700 demonomer-widget-container">
               <button 
-                  onClick={() => setIsDemonomerPopupOpen(true)}
-                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-[0.85em] px-2 py-2 text-center rounded-t-xl flex items-center justify-center gap-1 uppercase tracking-tight cursor-pointer transition-colors w-full relative"
+                  disabled={isMobileScheduleReadOnly}
+                  onClick={() => {
+                      if (!isMobileScheduleReadOnly) setIsDemonomerPopupOpen(true);
+                  }}
+                  title={isMobileScheduleReadOnly ? 'Adjust Steam hanya dapat diubah dari desktop' : 'Buka Adjust Steam'}
+                  className={`bg-teal-600 text-white font-bold text-[0.85em] px-2 py-2 text-center rounded-t-xl flex items-center justify-center gap-1 uppercase tracking-tight transition-colors w-full relative focus-visible:ring-2 focus-visible:ring-teal-300 focus-visible:ring-inset ${isMobileScheduleReadOnly ? 'cursor-not-allowed opacity-65' : 'hover:bg-teal-700 cursor-pointer'}`}
               >
                   <Activity className="w-3 h-3" />
                   ADJUST STEAM
@@ -4256,9 +4306,12 @@ const App: React.FC = () => {
                       <input 
                           type="number"
                           step="0.1"
+                          readOnly={isMobileScheduleReadOnly}
+                          aria-readonly={isMobileScheduleReadOnly}
+                          aria-label="Nilai FIE2002"
                           value={demonomerData.f2002}
                           onChange={(e) => handleDemonomerChange('f2002', parseFloat(e.target.value) || 0)}
-                          className="w-full bg-transparent text-3xl font-black text-center outline-none drop-shadow-sm appearance-none"
+                          className={`w-full bg-transparent text-3xl font-black text-center outline-none drop-shadow-sm appearance-none ${isMobileScheduleReadOnly ? 'cursor-default' : ''}`}
                       />
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-inner flex flex-col justify-center">
@@ -4283,17 +4336,19 @@ const App: React.FC = () => {
   const renderCatalystMiniWidget = () => {
       return (
           <div className="flex flex-col flex-1 shadow-sm rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800 catalyst-widget-container min-h-0">
-              <div 
+              <button
+                  type="button"
+                  disabled={isMobileScheduleReadOnly}
                   onClick={openCatalystModal}
-                  className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer text-white font-bold text-[0.8em] px-3 py-2 text-center flex items-center justify-between gap-2 uppercase tracking-tight transition-colors shrink-0"
-                  title="Click to open Catalyst Presets Settings"
+                  className={`bg-indigo-600 text-white font-bold text-[0.8em] px-3 py-2 text-center flex items-center justify-between gap-2 uppercase tracking-tight transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-inset ${isMobileScheduleReadOnly ? 'cursor-not-allowed opacity-65' : 'hover:bg-indigo-700 cursor-pointer'}`}
+                  title={isMobileScheduleReadOnly ? 'Catalyst Data hanya dapat diubah dari desktop' : 'Click to open Catalyst Presets Settings'}
               >
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                       <Activity className="w-3 h-3 animate-pulse" />
                       CATALYST DATA
-                  </div>
+                  </span>
                   <Sliders className="w-3.5 h-3.5 opacity-80" />
-              </div>
+              </button>
               <div className="p-2 flex-1 flex flex-col justify-center">
                   <table className="w-full border-collapse h-full">
                       <thead>
@@ -4312,6 +4367,9 @@ const App: React.FC = () => {
                                   <td className="py-1 px-1">
                                       <input 
                                           type="text" 
+                                          readOnly={isMobileScheduleReadOnly}
+                                          aria-readonly={isMobileScheduleReadOnly}
+                                          aria-label={`Catalyst ${key.toUpperCase()} netto`}
                                           value={catalystData[key]?.netto || ''} 
                                           onChange={(e) => handleCatalystChange(key, 'netto', e.target.value)}
                                           className="w-full bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white text-center font-bold py-1 rounded border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 text-[1.1em]"
@@ -4320,6 +4378,9 @@ const App: React.FC = () => {
                                   <td className="py-1 px-1">
                                       <input 
                                           type="text" 
+                                          readOnly={isMobileScheduleReadOnly}
+                                          aria-readonly={isMobileScheduleReadOnly}
+                                          aria-label={`Catalyst ${key.toUpperCase()} bruto`}
                                           value={catalystData[key]?.bruto || ''} 
                                           onChange={(e) => handleCatalystChange(key, 'bruto', e.target.value)}
                                           className="w-full bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white text-center font-bold py-1 rounded border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 text-[1.1em]"
@@ -4353,6 +4414,21 @@ const App: React.FC = () => {
              supaya isi sel tidak saling tindih. */
           style={{ fontSize: `${isDesktop ? config.tableFontSize : Math.min(config.tableFontSize, 13)}px` }}
         >
+          {isMobileScheduleReadOnly && (
+            <div
+              role="status"
+              className="lg:hidden flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <div className="leading-snug">
+                <p className="font-black uppercase tracking-wide">Mode hanya baca di HP</p>
+                <p className="mt-0.5 text-[0.9em] font-semibold opacity-90">
+                  Schedule Start Reactor tidak dapat diubah. Jadwal Backup dan Kas Grup tetap dapat diedit.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* LEFT SIDE: 80% Table */}
           <div className="w-full lg:w-[80%] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
             
@@ -4417,19 +4493,24 @@ const App: React.FC = () => {
                             <span className="font-black font-serif drop-shadow-md leading-none" style={{ fontSize: '2.2em' }}>{reactor.label}</span>
                             
                             {/* Reactor Note Display */}
-                            <div 
-                              className="mt-2 w-full cursor-pointer hover:scale-105 transition-transform"
+                            <button
+                              type="button"
+                              disabled={isMobileScheduleReadOnly}
+                              className={`mt-2 w-full transition-transform focus-visible:ring-2 focus-visible:ring-white/80 ${isMobileScheduleReadOnly ? 'cursor-default' : 'cursor-pointer hover:scale-105'}`}
                               onClick={() => openReactorNoteModal(reactor.id)}
-                              title="Click to edit note"
+                              aria-label={`Catatan reaktor ${reactor.id}${isMobileScheduleReadOnly ? ', hanya baca' : ', klik untuk mengubah'}`}
+                              title={isMobileScheduleReadOnly ? 'Catatan reaktor hanya dapat diubah dari desktop' : 'Click to edit note'}
                             >
                                {config.reactorNotes[reactor.id] ? (
-                                   <div className="bg-yellow-400 text-black font-bold text-left rounded px-1 border-2 border-red-600 shadow-sm whitespace-pre-wrap break-words leading-tight" style={{ fontSize: '0.6em' }}>
+                                   <span className="block bg-yellow-400 text-black font-bold text-left rounded px-1 border-2 border-red-600 shadow-sm whitespace-pre-wrap break-words leading-tight" style={{ fontSize: '0.6em' }}>
                                        {config.reactorNotes[reactor.id]}
-                                   </div>
+                                   </span>
                                ) : (
-                                   <div className="opacity-50 flex items-center justify-center scale-75"><Edit3 className="w-4 h-4" /></div>
+                                   <span className="opacity-50 flex items-center justify-center scale-75">
+                                     {isMobileScheduleReadOnly ? <span aria-hidden="true">—</span> : <Edit3 className="w-4 h-4" aria-hidden="true" />}
+                                   </span>
                                )}
-                            </div>
+                            </button>
                          </div>
                       </td>
 
@@ -4443,7 +4524,7 @@ const App: React.FC = () => {
                         const isFuture = !isPast && !isActive && !isSkipped;
                         
                         // Base table cell styles
-                        const baseClasses = "p-0 border-r cursor-pointer transition-all duration-300 relative group hover:z-20 hover:ring-2 hover:ring-blue-400 overflow-hidden shadow-sm";
+                        const baseClasses = `p-0 border-r transition-all duration-300 relative group overflow-hidden shadow-sm ${isMobileScheduleReadOnly ? 'cursor-default' : 'cursor-pointer hover:z-20 hover:ring-2 hover:ring-blue-400 focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none'}`;
                         
                         // Robust conditional status styling array
                         const statusClasses = [
@@ -4482,7 +4563,19 @@ const App: React.FC = () => {
                         return (
                           <td 
                               key={item.id} 
-                              onClick={() => openRescheduleModal(item)}
+                              onClick={isMobileScheduleReadOnly ? undefined : () => openRescheduleModal(item)}
+                              onKeyDown={(event) => {
+                                if (isMobileScheduleReadOnly) return;
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  openRescheduleModal(item);
+                                }
+                              }}
+                              role="button"
+                              tabIndex={isMobileScheduleReadOnly ? -1 : 0}
+                              aria-disabled={isMobileScheduleReadOnly}
+                              aria-label={`Reaktor ${item.reactorId}, batch ${item.batchNumber}, ${isMobileScheduleReadOnly ? 'hanya baca' : 'klik untuk mengubah schedule'}`}
+                              title={isMobileScheduleReadOnly ? 'Schedule hanya dapat diubah dari desktop' : 'Klik untuk mengubah schedule'}
                               className={cellClasses}
                               style={{
                                 width: `calc((100% - ${isDesktop ? 140 : MOBILE_REACTOR_COL}px) / ${config.columnsToDisplay})`,
@@ -4630,11 +4723,13 @@ const App: React.FC = () => {
                                 )}
 
                                 {/* Edit Overlay Icon */}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                                    <div className="bg-blue-600 text-white rounded-full p-2 shadow-lg">
-                                        <Edit3 className="w-6 h-6" />
+                                {!isMobileScheduleReadOnly && (
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                                      <div className="bg-blue-600 text-white rounded-full p-2 shadow-lg">
+                                          <Edit3 className="w-6 h-6" />
+                                      </div>
                                     </div>
-                                </div>
+                                )}
                               </div>
 
                               {/* Bottom: Notes & Stage Info */}
@@ -5085,6 +5180,7 @@ const App: React.FC = () => {
           case 'catalyst': content = renderCatalyst(); break;
           case 'demonomer': content = (
             <Demonomer 
+                readOnly={isMobileScheduleReadOnly}
                 currentGrade={config.gradeMode === 'normal' ? config.currentGrade : demonomerGrade} 
                 onGradeChange={handleDemonomerGradeChange}
                 data={demonomerData}
@@ -5102,6 +5198,7 @@ const App: React.FC = () => {
           ); break;
           case 'silo': content = (
             <Silo 
+                readOnly={isMobileScheduleReadOnly}
                 activeSilo={siloState.activeSilo}
                 silos={siloState.silos}
                 onDataChange={handleSiloDataChange}
@@ -5732,6 +5829,7 @@ const App: React.FC = () => {
 
               {currentView === 'demonomer' && (
                 <Demonomer 
+                    readOnly={isMobileScheduleReadOnly}
                     currentGrade={config.gradeMode === 'normal' ? config.currentGrade : demonomerGrade} 
                     onGradeChange={handleDemonomerGradeChange}
                     data={demonomerData}
@@ -5745,6 +5843,7 @@ const App: React.FC = () => {
               {currentView === 'silo' && (
                 <div className="silo-container">
                     <Silo 
+                        readOnly={isMobileScheduleReadOnly}
                         activeSilo={siloState.activeSilo}
                         silos={siloState.silos}
                         onDataChange={handleSiloDataChange}
@@ -5792,7 +5891,10 @@ const App: React.FC = () => {
                 onSelectView={setCurrentView}
                 onSelectGroup={handleSelectGroup}
                 isSettingsOpen={isSettingsOpen}
-                onToggleSettings={() => setIsSettingsOpen(o => !o)}
+                onToggleSettings={() => {
+                  if (isDesktop) setIsSettingsOpen(o => !o);
+                }}
+                settingsDisabled={isMobileScheduleReadOnly}
                 isMobile={!isDesktop}
                 mobileOpen={isMobileNavOpen}
             onMobileClose={() => setIsMobileNavOpen(false)}
@@ -5822,6 +5924,7 @@ const App: React.FC = () => {
                       </div>
                       <div className="flex-1 overflow-y-auto p-4 sm:p-5 max-h-[78vh]">
                           <Demonomer 
+                              readOnly={isMobileScheduleReadOnly}
                               currentGrade={config.gradeMode === 'normal' ? config.currentGrade : demonomerGrade} 
                               onGradeChange={handleDemonomerGradeChange}
                               data={demonomerData}
@@ -6794,6 +6897,7 @@ const App: React.FC = () => {
 
       {/* --- FIE2002 HOURLY TREND MODAL --- */}
       <Fie2002TrendModal 
+          readOnly={isMobileScheduleReadOnly}
           isOpen={isFie2002TrendOpen}
           onClose={() => setIsFie2002TrendOpen(false)}
           currentValue={demonomerData.f2002}
