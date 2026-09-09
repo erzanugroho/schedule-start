@@ -5,6 +5,7 @@ import { GradeType, DemonomerData } from '../types';
 import { GRADE_COLORS } from '../constants';
 
 interface DemonomerProps {
+  readOnly?: boolean;
   currentGrade: GradeType;
   onGradeChange: (grade: GradeType) => void;
   data: DemonomerData;
@@ -19,15 +20,17 @@ type GradeKey = 'SM' | 'SLP' | 'SLK' | 'SE' | 'SR';
 const DEFAULT_PVC_FORMULA = "F2002*AI2802/1000*%PVC";
 const DEFAULT_STEAM_FORMULA = "PVC * Steam Rasio";
 
-export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChange, data, onDataChange, gradeMode, onGradeModeChange, onOpenFieTrend }) => {
+export const Demonomer: React.FC<DemonomerProps> = ({ readOnly = false, currentGrade, onGradeChange, data, onDataChange, gradeMode, onGradeModeChange, onOpenFieTrend }) => {
   
   // --- Handlers ---
   const handleResetFormulas = () => {
+    if (readOnly) return;
     onDataChange('pvcFormula', DEFAULT_PVC_FORMULA);
     onDataChange('steamFormula', DEFAULT_STEAM_FORMULA);
   };
 
   const handleMultiplierChange = (grade: GradeKey, val: string) => {
+    if (readOnly) return;
     const num = parseFloat(val) || 0;
     onDataChange('multipliers', { ...data.multipliers, [grade]: num });
   };
@@ -75,6 +78,12 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
 
   return (
     <div className="p-1 sm:p-2 font-sans animate-in fade-in duration-300 flex flex-col gap-4 relative">
+      {readOnly && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs font-black uppercase tracking-wide text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+          <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Steam &amp; Grade Selection hanya baca di HP
+        </div>
+      )}
       
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -93,26 +102,29 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <div className={`flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl ${readOnly ? 'opacity-65' : ''}`}>
                   <button 
+                    disabled={readOnly}
                     onClick={() => onGradeModeChange('normal')}
-                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${gradeMode === 'normal' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${readOnly ? 'cursor-not-allowed' : 'cursor-pointer'} ${gradeMode === 'normal' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                   >
                       NORMAL
                   </button>
                   <button 
+                    disabled={readOnly}
                     onClick={() => onGradeModeChange('gradeChange')}
-                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${gradeMode === 'gradeChange' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${readOnly ? 'cursor-not-allowed' : 'cursor-pointer'} ${gradeMode === 'gradeChange' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                   >
                       GRADE CHANGE
                   </button>
               </div>
-              <div className="flex gap-1">
+              <div className={`flex gap-1 ${readOnly ? 'opacity-65' : ''}`}>
                   {(Object.keys(data.multipliers) as GradeKey[]).map(g => (
                       <button 
                         key={g} 
+                        disabled={readOnly}
                         onClick={() => onGradeChange(g as GradeType)}
-                        className={`px-2.5 py-1.5 rounded-lg font-black text-xs transition-all cursor-pointer ${currentGrade === g ? `${GRADE_COLORS[g]} text-white shadow-sm ring-1 ring-teal-400` : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200'}`}
+                        className={`px-2.5 py-1.5 rounded-lg font-black text-xs transition-all ${readOnly ? 'cursor-not-allowed' : 'cursor-pointer'} ${currentGrade === g ? `${GRADE_COLORS[g]} text-white shadow-sm ring-1 ring-teal-400` : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200'}`}
                       >
                           {g}
                       </button>
@@ -166,6 +178,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                               <input 
                                 type="number"
                                 step="any"
+                                readOnly={readOnly}
+                                aria-readonly={readOnly}
+                                aria-label="Nilai FIE2002"
                                 value={data.f2002}
                                 onChange={(e) => onDataChange('f2002', parseFloat(e.target.value) || 0)}
                                 className="w-full bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800 rounded-xl px-2 py-2 text-base sm:text-lg font-mono font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -175,6 +190,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                               <input 
                                 type="number"
                                 step="any"
+                                readOnly={readOnly}
+                                aria-readonly={readOnly}
+                                aria-label="Nilai AI2802"
                                 value={data.aie2802}
                                 onChange={(e) => onDataChange('aie2802', parseFloat(e.target.value) || 0)}
                                 className="w-full bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800 rounded-xl px-2 py-2 text-base sm:text-lg font-mono font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -185,6 +203,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                                   <input 
                                     type="number"
                                     step="any"
+                                    readOnly={readOnly}
+                                    aria-readonly={readOnly}
+                                    aria-label="Persentase PVC"
                                     value={data.pvcPercent}
                                     onChange={(e) => onDataChange('pvcPercent', parseFloat(e.target.value) || 0)}
                                     className="w-full bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800 rounded-xl px-2 pr-6 py-2 text-base sm:text-lg font-mono font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -228,8 +249,8 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                   {(Object.keys(data.multipliers) as GradeKey[]).map(g => (
                       <div 
                           key={g} 
-                          className={`group flex flex-col gap-1.5 p-2.5 rounded-xl border transition-all cursor-pointer ${currentGrade === g ? 'bg-teal-50/70 dark:bg-teal-900/30 border-teal-500 shadow-xs ring-1 ring-teal-400/40' : 'bg-white dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
-                          onClick={() => onGradeChange(g as GradeType)}
+                          className={`group flex flex-col gap-1.5 p-2.5 rounded-xl border transition-all ${readOnly ? 'cursor-default opacity-70' : 'cursor-pointer'} ${currentGrade === g ? 'bg-teal-50/70 dark:bg-teal-900/30 border-teal-500 shadow-xs ring-1 ring-teal-400/40' : 'bg-white dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                          onClick={readOnly ? undefined : () => onGradeChange(g as GradeType)}
                       >
                           <div className="flex justify-between items-center">
                               <span className={`text-xs font-black ${currentGrade === g ? 'text-teal-700 dark:text-teal-300 font-mono' : 'text-slate-600 dark:text-slate-400'}`}>{g}</span>
@@ -238,6 +259,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                           <input 
                               type="number"
                               step="any"
+                              readOnly={readOnly}
+                              aria-readonly={readOnly}
+                              aria-label={`Steam rasio grade ${g}`}
                               value={data.multipliers[g]}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleMultiplierChange(g, e.target.value)}
@@ -251,7 +275,7 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
           {/* Formula Configuration */}
           <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-md relative overflow-hidden flex flex-col justify-between gap-3">
                <div className="absolute top-3 right-3">
-                  <button onClick={handleResetFormulas} className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-white/60 hover:text-white cursor-pointer" title="Reset Formulas">
+                  <button disabled={readOnly} onClick={handleResetFormulas} className={`p-1.5 bg-white/10 rounded-lg transition-all text-white/60 ${readOnly ? 'cursor-not-allowed opacity-40' : 'hover:bg-white/20 hover:text-white cursor-pointer'}`} title={readOnly ? 'Formula hanya dapat diubah dari desktop' : 'Reset Formulas'}>
                       <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                </div>
@@ -265,6 +289,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PVC CALCULATION</label>
                        <input 
                             type="text"
+                            readOnly={readOnly}
+                            aria-readonly={readOnly}
+                            aria-label="Formula perhitungan PVC"
                             value={data.pvcFormula}
                             onChange={(e) => onDataChange('pvcFormula', e.target.value)}
                             className="w-full font-mono text-[11px] font-bold text-blue-400 bg-white/5 border border-white/10 rounded-xl p-2 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none"
@@ -279,6 +306,9 @@ export const Demonomer: React.FC<DemonomerProps> = ({ currentGrade, onGradeChang
                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">STEAM CALCULATION</label>
                        <input 
                             type="text"
+                            readOnly={readOnly}
+                            aria-readonly={readOnly}
+                            aria-label="Formula perhitungan steam"
                             value={data.steamFormula}
                             onChange={(e) => onDataChange('steamFormula', e.target.value)}
                             className="w-full font-mono text-[11px] font-bold text-rose-400 bg-white/5 border border-white/10 rounded-xl p-2 focus:bg-white/10 focus:ring-1 focus:ring-rose-400 outline-none"
